@@ -1,4 +1,4 @@
-import { useState, type MouseEvent } from 'react'
+import { useEffect, useState, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AnimatePresence, motion, useMotionValue, useSpring } from 'framer-motion'
 import { projects } from '../data/projects'
@@ -7,9 +7,9 @@ import { PageTransition } from '../components/PageTransition'
 import { useProjectTransition } from '../lib/project-transition'
 
 /**
- * Desktop: hovering a title floats a preview image beside the list, trailing the
- * pointer's vertical position with a light spring. Mobile: no hover is required —
- * each row carries its own small static thumbnail and is tap-navigable.
+ * A pure-typography index. On desktop, hovering a title floats a small preview
+ * beside the list, trailing the pointer with a light spring; those previews are
+ * warmed on mount so the first hover is instant rather than a visible fetch.
  */
 export function ProjectsIndex() {
   const { setMode } = useCursor()
@@ -17,6 +17,14 @@ export function ProjectsIndex() {
   const [hovered, setHovered] = useState<number | null>(null)
   const y = useMotionValue(240)
   const springY = useSpring(y, { damping: 26, stiffness: 220, mass: 0.6 })
+
+  useEffect(() => {
+    if (!window.matchMedia('(pointer: fine)').matches) return
+    projects.forEach((p) => {
+      const img = new Image()
+      img.src = p.preview
+    })
+  }, [])
 
   const handleMouseMove = (e: MouseEvent) => {
     const clamped = Math.min(Math.max(e.clientY - 160, 24), window.innerHeight - 420)
@@ -91,7 +99,7 @@ export function ProjectsIndex() {
                 className="aspect-[4/5] w-full overflow-hidden"
               >
                 <img
-                  src={active.cover}
+                  src={active.preview}
                   alt={active.title}
                   className="h-full w-full object-cover grayscale contrast-110"
                 />

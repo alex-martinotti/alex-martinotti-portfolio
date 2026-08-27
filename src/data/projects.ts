@@ -13,8 +13,10 @@ export interface Project {
   year: string
   client: string
   description: string
-  /** Cover frame — the project hero, and the desktop hover preview in the archive. */
+  /** Full-size cover — the project page hero. */
   cover: string
+  /** Small cover — the archive hover preview. Kept light so the archive stays instant. */
+  preview: string
   /** One or more films, played in order. */
   films: Film[]
   /** Stills shown below the films on the project page. */
@@ -52,6 +54,7 @@ const project = (
   client,
   description,
   cover: media(slug, 'cover.jpg'),
+  preview: media(slug, 'preview.jpg'),
   films: Array.from({ length: films }, (_, i) => ({
     src: media(slug, `film-${pad(i + 1)}.mp4`),
     poster: media(slug, `film-${pad(i + 1)}-poster.jpg`),

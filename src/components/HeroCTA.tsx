@@ -41,8 +41,10 @@ export function HeroCTA({
       }}
       onMouseDown={() => setPressed(true)}
       onMouseUp={() => setPressed(false)}
-      className={`group relative flex items-center px-6 py-10 transition-transform duration-150 md:px-8 md:py-14 ${
-        isLeft ? 'justify-start' : 'justify-end'
+      /* Stacked on mobile, both align left so the two read as one column;
+         they only mirror outward once they sit side by side. */
+      className={`group relative flex items-center py-8 transition-transform duration-150 sm:px-6 sm:py-10 md:px-8 md:py-14 ${
+        isLeft ? 'justify-start' : 'justify-start sm:justify-end'
       }`}
       style={{ transform: pressed ? 'scale(0.98)' : 'scale(1)' }}
     >
@@ -74,13 +76,13 @@ export function HeroCTA({
 
       <span
         className={`flex items-center gap-3 font-display text-3xl font-black uppercase leading-none tracking-tight transition-transform duration-300 ease-out sm:text-4xl md:text-5xl ${
-          isLeft ? '' : 'flex-row-reverse'
+          isLeft ? '' : 'sm:flex-row-reverse'
         }`}
         style={{ transform: hovered ? `translateX(${isLeft ? -4 : 4}px)` : 'translateX(0)' }}
       >
         {label}
         <span
-          className="text-xl transition-all duration-300 ease-out md:text-2xl"
+          className="cta-arrow text-xl transition-all duration-300 ease-out md:text-2xl"
           style={{
             opacity: hovered ? 1 : 0,
             transform: hovered ? 'translateX(0)' : `translateX(${isLeft ? 8 : -8}px)`,

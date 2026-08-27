@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useCursor } from '../lib/cursor-context'
 import { PageTransition } from '../components/PageTransition'
@@ -15,6 +15,33 @@ export function Home() {
   // Shared by both bottom links: darkens/offsets the hero so either click reads
   // as "sliding into another layer" — the same doorway, two directions.
   const [leaving, setLeaving] = useState(false)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  /**
+   * iOS only honours autoplay when the element is *actually* muted at the DOM
+   * level, and React's `muted` prop doesn't always land before Safari decides —
+   * which leaves a tap-to-play button over the hero. Set it imperatively and
+   * kick off playback ourselves; if the browser still refuses (Low Power Mode
+   * blocks it outright), retry on the viewer's first interaction.
+   */
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video) return
+
+    video.muted = true
+    video.defaultMuted = true
+
+    const play = () => video.play().catch(() => {})
+    play()
+
+    const onFirstTouch = () => play()
+    document.addEventListener('touchstart', onFirstTouch, { once: true, passive: true })
+    document.addEventListener('click', onFirstTouch, { once: true })
+    return () => {
+      document.removeEventListener('touchstart', onFirstTouch)
+      document.removeEventListener('click', onFirstTouch)
+    }
+  }, [])
 
   const enter = () => {
     setMode('hover')
@@ -34,13 +61,17 @@ export function Home() {
       >
         <div className="absolute inset-0">
           <motion.video
+            ref={videoRef}
             src={HERO_VIDEO}
             poster={HERO_POSTER}
             autoPlay
             muted
             loop
             playsInline
-            className="h-full w-full object-cover"
+            controls={false}
+            disablePictureInPicture
+            preload="auto"
+            className="pointer-events-none h-full w-full object-cover"
             animate={{
               scale: leaving ? [1.1, 1.14] : [1.1, 1.16, 1.1],
               opacity: leaving ? 0.5 : 1,

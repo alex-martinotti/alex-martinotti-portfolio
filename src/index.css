@@ -47,3 +47,12 @@ body {
   background: var(--color-ink);
   color: var(--color-void);
 }
+
+/* Touch devices never fire hover, so the hero CTA arrows would stay invisible
+   and the buttons would read as inert. Show them permanently instead. */
+@media (hover: none) {
+  .cta-arrow {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
