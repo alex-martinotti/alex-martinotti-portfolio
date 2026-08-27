@@ -11,9 +11,11 @@ import {
   wallpapers,
   ratiosFor,
   formatPrice,
+  COLLECTIONS,
   type Device,
   type DesktopRatio,
   type IPhoneMode,
+  type Collection,
 } from '../data/wallpapers'
 
 const INCLUDED = ['High-resolution JPG', 'Instant download', 'Personal use']
@@ -27,6 +29,12 @@ export function Wallpapers() {
   const [screen, setScreen] = useState<IPhoneMode>('lock')
   const [ratio, setRatio] = useState<DesktopRatio>('16:9')
   const [fullscreen, setFullscreen] = useState(false)
+  const [filter, setFilter] = useState<Collection | 'All'>('All')
+
+  const visible = useMemo(
+    () => (filter === 'All' ? wallpapers : wallpapers.filter((w) => w.collection === filter)),
+    [filter],
+  )
 
   const selected = useMemo(
     () => wallpapers.find((w) => w.id === selectedId) ?? wallpapers[0],
@@ -90,7 +98,9 @@ export function Wallpapers() {
             <h2 className="mt-1 font-display text-4xl font-black uppercase leading-none tracking-tight md:text-5xl">
               {selected.title}
             </h2>
-            <p className="mt-3 text-xs uppercase tracking-[0.2em] text-muted">Digital wallpaper</p>
+            <p className="mt-3 text-xs uppercase tracking-[0.2em] text-muted">
+              {selected.collection}
+            </p>
             <p className="mt-1 text-xs text-muted">
               {selected.location} · {selected.year}
             </p>
@@ -218,12 +228,31 @@ export function Wallpapers() {
 
         {/* catalogue — lazy, thumbnails only */}
         <div className="mt-20 border-t border-line pt-8 md:mt-28">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-muted">
-            All wallpapers — {String(wallpapers.length).padStart(2, '0')}
-          </p>
+          <div className="flex flex-wrap items-baseline justify-between gap-4">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-muted">
+              {filter === 'All' ? 'All wallpapers' : filter} —{' '}
+              {String(visible.length).padStart(2, '0')}
+            </p>
+
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {(['All', ...COLLECTIONS] as const).map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setFilter(c)}
+                  onMouseEnter={() => setMode('hover')}
+                  onMouseLeave={() => setMode('default')}
+                  className={`text-[10px] uppercase tracking-[0.2em] transition-colors duration-300 ${
+                    filter === c ? 'text-ink' : 'text-muted hover:text-ink'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <div className="mt-6 flex gap-3 overflow-x-auto pb-3">
-            {wallpapers.map((w) => (
+            {visible.map((w) => (
               <button
                 key={w.id}
                 onClick={() => setSelectedId(w.id)}
