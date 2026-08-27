@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '../lib/cart-context'
 import { formatPrice } from '../data/wallpapers'
@@ -5,11 +6,38 @@ import { useCursor } from '../lib/cursor-context'
 
 /**
  * Only appears once something is in the cart — no persistent shop chrome on a
- * portfolio. Sits bottom-right so it never collides with the AM mark or Menu.
+ * portfolio. Checkout hands off to Stripe's hosted page; the cart is cleared
+ * by the thank-you page, not here, so a cancelled payment keeps the basket.
  */
 export function CartBar() {
   const { lines, total, remove, clear } = useCart()
   const { setMode } = useCursor()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const checkout = async () => {
+    if (busy || !lines.length) return
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: lines.map((l) => ({
+            id: l.slug,
+            format: l.device === 'iphone' ? 'iphone' : l.ratio,
+          })),
+        }),
+      })
+      const data = (await res.json()) as { url?: string; error?: string }
+      if (!res.ok || !data.url) throw new Error(data.error ?? 'Checkout unavailable')
+      window.location.href = data.url
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Checkout unavailable')
+      setBusy(false)
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -48,16 +76,20 @@ export function CartBar() {
               </button>
               <span className="font-display text-lg font-black tracking-tight">{formatPrice(total)}</span>
               <button
-                disabled
-                title="Checkout is not connected yet"
+                onClick={checkout}
+                disabled={busy}
                 onMouseEnter={() => setMode('hover')}
                 onMouseLeave={() => setMode('default')}
-                className="border-b border-ink pb-0.5 font-display text-lg font-black uppercase tracking-tight disabled:opacity-40"
+                className="border-b border-ink pb-0.5 font-display text-lg font-black uppercase tracking-tight transition-opacity duration-300 hover:opacity-70 disabled:opacity-40"
               >
-                Checkout →
+                {busy ? 'Opening…' : 'Checkout →'}
               </button>
             </div>
           </div>
+
+          {error && (
+            <p className="mx-auto mt-3 max-w-6xl text-xs text-muted">{error}</p>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

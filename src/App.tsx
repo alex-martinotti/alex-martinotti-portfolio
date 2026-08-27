@@ -13,6 +13,7 @@ import { Contact } from './pages/Contact'
 import { About } from './pages/About'
 import { Luts } from './pages/Luts'
 import { Wallpapers } from './pages/Wallpapers'
+import { ThankYou } from './pages/ThankYou'
 
 function App() {
   const location = useLocation()
@@ -34,6 +35,7 @@ function App() {
                 <Route path="/about" element={<About />} />
                 <Route path="/luts" element={<Luts />} />
                 <Route path="/wallpapers" element={<Wallpapers />} />
+                <Route path="/thank-you" element={<ThankYou />} />
               </Routes>
             </AnimatePresence>
           </Navigation>
