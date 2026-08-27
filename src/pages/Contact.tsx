@@ -4,7 +4,7 @@ import { useCursor } from '../lib/cursor-context'
 import { PageTransition } from '../components/PageTransition'
 
 /** Update to point at your real inbox, and add a real scheduling link once you have one. */
-const EMAIL = 'hello@alexmartinotti.com'
+const EMAIL = 'martinotti.alex@gmail.com'
 const BOOKING_URL = ''
 
 const PROJECT_TYPES = ['Film', 'Photo', 'Campaign', 'Social', 'Brand', 'Other']
@@ -62,6 +62,8 @@ export function Contact() {
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Answers>(emptyAnswers)
   const [done, setDone] = useState(false)
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -73,16 +75,37 @@ export function Contact() {
   const goNext = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1))
   const goBack = () => setStep((s) => Math.max(s - 1, 0))
 
-  const finish = () => {
-    window.location.href = buildMailto(answers)
-    setDone(true)
+  /**
+   * Posts to the serverless function, which emails Alex and sends the visitor a
+   * confirmation. If that ever fails we fall back to opening a pre-filled mail
+   * draft, so an enquiry is never silently lost.
+   */
+  const finish = async () => {
+    if (sending) return
+    setSending(true)
+    setError(null)
+
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(answers),
+      })
+      if (!res.ok) throw new Error(String(res.status))
+      setDone(true)
+    } catch {
+      setError("That didn't send — opening your email app instead.")
+      window.location.href = buildMailto(answers)
+    } finally {
+      setSending(false)
+    }
   }
 
   const handleEnter = (e: KeyboardEvent) => {
     if (e.key !== 'Enter' || e.shiftKey) return
     e.preventDefault()
     if (step === TOTAL_STEPS - 1) {
-      if (answers.email.trim()) finish()
+      if (answers.email.trim()) void finish()
     } else {
       goNext()
     }
@@ -280,16 +303,19 @@ export function Contact() {
 
               {step === TOTAL_STEPS - 1 && (
                 <button
-                  onClick={() => answers.email.trim() && finish()}
+                  onClick={() => answers.email.trim() && void finish()}
+                  disabled={sending}
                   onMouseEnter={() => setMode('hover')}
                   onMouseLeave={() => setMode('default')}
-                  className={labelClass}
+                  className={`${labelClass} disabled:opacity-40`}
                 >
-                  Send
+                  {sending ? 'Sending' : 'Send'}
                   <span>→</span>
                 </button>
               )}
             </div>
+
+            {error && <p className="mt-6 text-sm text-muted">{error}</p>}
           </>
         )}
       </div>

@@ -35,6 +35,21 @@ export function Navigation({ children }: { children: ReactNode }) {
     }
   }, [open])
 
+  /**
+   * The panel scales the whole page behind it, and scaling a *playing* video
+   * makes the browser re-rasterise every frame — the single biggest cause of
+   * the menu feeling sluggish. Park the autoplaying hero while the panel is
+   * open (it's hidden anyway) and resume it on close. Only `autoplay` videos
+   * are touched, so a project film the viewer started is left alone.
+   */
+  useEffect(() => {
+    const heroes = Array.from(document.querySelectorAll('video')).filter((v) => v.autoplay)
+    heroes.forEach((v) => {
+      if (open) v.pause()
+      else void v.play().catch(() => {})
+    })
+  }, [open])
+
   const hasDarkHero = location.pathname === '/' || location.pathname.startsWith('/work/')
   const overDark = open || (hasDarkHero && !scrolled)
   const tone = overDark ? 'text-white' : 'text-ink'
@@ -88,7 +103,11 @@ export function Navigation({ children }: { children: ReactNode }) {
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       />
 
-      <motion.div animate={{ scale: open ? 0.97 : 1 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}>
+      <motion.div
+        animate={{ scale: open ? 0.97 : 1 }}
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        style={{ willChange: open ? 'transform' : 'auto' }}
+      >
         {children}
       </motion.div>
     </>

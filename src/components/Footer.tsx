@@ -1,5 +1,5 @@
-const EMAIL = 'hello@alexmartinotti.com'
-const INSTAGRAM_URL = 'https://instagram.com/alexmartinotti'
+const EMAIL = 'martinotti.alex@gmail.com'
+const INSTAGRAM_URL = 'https://instagram.com/byalexmartinotti'
 
 export function Footer() {
   return (
