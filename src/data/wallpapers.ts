@@ -1,71 +1,88 @@
 export type Device = 'iphone' | 'desktop'
+export type IPhoneMode = 'lock' | 'home'
 
-/** Desktop crops on offer. Labels double as the on-screen option list. */
 export const DESKTOP_RATIOS = ['16:9', '16:10', '4:3', '5:4'] as const
 export type DesktopRatio = (typeof DESKTOP_RATIOS)[number]
 
 export interface Wallpaper {
-  slug: string
+  id: string
   number: string
   title: string
-  /** Where it was shot — the only copy on the card. */
   location: string
   year: string
-  /** Small grid/preview image. */
-  preview: string
-  /** Prices in euro cents, per device. Omit a device to not offer it. */
-  iphone?: { price: number }
-  desktop?: { price: number }
+  price: number
+  /** Small, lazy-loaded — the catalogue strip only. */
+  thumbnail: string
+  /** Screen-sized previews. A format the photograph doesn't have is simply omitted. */
+  iphone?: { preview: string }
+  desktop?: Partial<Record<DesktopRatio, string>>
 }
 
 /**
- * Wallpaper files live in public/media/wallpapers/<slug>/:
- *   preview.jpg              — the grid thumbnail (~800px, light)
- *   iphone.jpg               — 1290 × 2796
- *   desktop-16x9.jpg         — 3840 × 2160
- *   desktop-16x10.jpg        — 3840 × 2400
- *   desktop-4x3.jpg          — 3840 × 2880
- *   desktop-5x4.jpg          — 3840 × 3072
+ * Files live in public/media/wallpapers/<id>/:
+ *   thumb.jpg              ~400px, catalogue strip
+ *   iphone.jpg             9:19.5 preview
+ *   desktop-16x9.jpg …     one per offered ratio
  *
- * Only `preview.jpg` is served publicly. The full-resolution files are
- * delivered after purchase, so they must NOT be committed to public/ once
- * payments are live — see README for the protected-delivery setup.
+ * These are PREVIEWS. The full-resolution downloads are the actual product and
+ * must not sit in public/ once checkout is live — they'd be freely fetchable.
  *
- * To add a wallpaper: create the folder, add the files, add an entry here.
+ * To add a photograph: make the folder, drop in the crops you have, add an
+ * entry below. Omit `iphone` or any ratio you didn't produce and the UI hides
+ * that option automatically.
  */
-const media = (slug: string, file: string) => `/media/wallpapers/${slug}/${file}`
+const media = (id: string, file: string) => `/media/wallpapers/${id}/${file}`
 
-export const previewSrc = (w: Wallpaper) => w.preview
+const ratioFile = (r: DesktopRatio) => `desktop-${r.replace(':', 'x')}.jpg`
 
-export const fileFor = (slug: string, device: Device, ratio?: DesktopRatio) =>
-  device === 'iphone'
-    ? media(slug, 'iphone.jpg')
-    : media(slug, `desktop-${(ratio ?? '16:9').replace(':', 'x')}.jpg`)
+/** Build a desktop map from the ratios that actually exist for this photograph. */
+const desktopSet = (id: string, ratios: DesktopRatio[]) =>
+  ratios.reduce<Partial<Record<DesktopRatio, string>>>((acc, r) => {
+    acc[r] = media(id, ratioFile(r))
+    return acc
+  }, {})
 
 const wallpaper = (
-  slug: string,
+  id: string,
   number: string,
   title: string,
   location: string,
   year: string,
-  devices: { iphone?: number; desktop?: number },
+  price: number,
+  opts: { iphone?: boolean; desktop?: DesktopRatio[] },
 ): Wallpaper => ({
-  slug,
+  id,
   number,
   title,
   location,
   year,
-  preview: media(slug, 'preview.jpg'),
-  ...(devices.iphone ? { iphone: { price: devices.iphone } } : {}),
-  ...(devices.desktop ? { desktop: { price: devices.desktop } } : {}),
+  price,
+  thumbnail: media(id, 'thumb.jpg'),
+  ...(opts.iphone ? { iphone: { preview: media(id, 'iphone.jpg') } } : {}),
+  ...(opts.desktop?.length ? { desktop: desktopSet(id, opts.desktop) } : {}),
 })
+
+const ALL_RATIOS = [...DESKTOP_RATIOS]
 
 /** Prices in cents — 700 = €7.00 */
 export const wallpapers: Wallpaper[] = [
-  wallpaper('ha-giang', '01', 'Ha Giang', 'Vietnam', '2026', { iphone: 700, desktop: 900 }),
-  wallpaper('berlin-tower', '02', 'Berlin Tower', 'Germany', '2026', { iphone: 700, desktop: 900 }),
-  wallpaper('lombok', '03', 'Lombok', 'Indonesia', '2026', { iphone: 700, desktop: 900 }),
+  wallpaper('ha-giang', '01', 'Ha Giang', 'Vietnam', '2026', 700, {
+    iphone: true,
+    desktop: ALL_RATIOS,
+  }),
+  wallpaper('berlin-tower', '02', 'Berlin Tower', 'Germany', '2026', 700, {
+    iphone: true,
+    desktop: ALL_RATIOS,
+  }),
+  wallpaper('lombok', '03', 'Lombok', 'Indonesia', '2026', 700, {
+    iphone: true,
+    desktop: ALL_RATIOS,
+  }),
 ]
+
+/** Which desktop ratios this photograph actually offers, in canonical order. */
+export const ratiosFor = (w: Wallpaper): DesktopRatio[] =>
+  DESKTOP_RATIOS.filter((r) => Boolean(w.desktop?.[r]))
 
 export const formatPrice = (cents: number) =>
   new Intl.NumberFormat('en-IE', { style: 'currency', currency: 'EUR' }).format(cents / 100)

@@ -1,177 +1,275 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PageTransition } from '../components/PageTransition'
 import { TextReveal } from '../components/TextReveal'
 import { Footer } from '../components/Footer'
+import { IPhoneScreen } from '../components/devices/IPhoneScreen'
+import { DesktopScreen } from '../components/devices/DesktopScreen'
 import { useCursor } from '../lib/cursor-context'
 import { useCart, lineId } from '../lib/cart-context'
 import {
   wallpapers,
-  DESKTOP_RATIOS,
+  ratiosFor,
   formatPrice,
   type Device,
   type DesktopRatio,
-  type Wallpaper,
+  type IPhoneMode,
 } from '../data/wallpapers'
 
-/**
- * The archive's structure, applied to a shop: pick a photograph, pick the
- * device, pick the crop. Kept monochrome and type-led so it reads as part of
- * the same site rather than a storefront bolted on.
- */
+const INCLUDED = ['High-resolution JPG', 'Instant download', 'Personal use']
+
 export function Wallpapers() {
   const { setMode } = useCursor()
   const { add, has } = useCart()
-  const [selected, setSelected] = useState<Wallpaper>(wallpapers[0])
-  const [device, setDevice] = useState<Device>('iphone')
-  const [ratio, setRatio] = useState<DesktopRatio>('16:9')
 
-  const price = device === 'iphone' ? selected.iphone?.price : selected.desktop?.price
-  const available = device === 'iphone' ? !!selected.iphone : !!selected.desktop
-  const id = lineId(selected.slug, device, ratio)
+  const [selectedId, setSelectedId] = useState(wallpapers[0].id)
+  const [device, setDevice] = useState<Device>('iphone')
+  const [screen, setScreen] = useState<IPhoneMode>('lock')
+  const [ratio, setRatio] = useState<DesktopRatio>('16:9')
+  const [fullscreen, setFullscreen] = useState(false)
+
+  const selected = useMemo(
+    () => wallpapers.find((w) => w.id === selectedId) ?? wallpapers[0],
+    [selectedId],
+  )
+  const ratios = ratiosFor(selected)
+
+  // Keep the selection valid when moving between photographs that offer
+  // different formats — never leave a dead option selected.
+  useEffect(() => {
+    if (device === 'iphone' && !selected.iphone && ratios.length) setDevice('desktop')
+    if (device === 'desktop' && !ratios.length && selected.iphone) setDevice('iphone')
+    if (device === 'desktop' && ratios.length && !ratios.includes(ratio)) setRatio(ratios[0])
+  }, [selected, device, ratio, ratios])
+
+  useEffect(() => {
+    if (!fullscreen) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setFullscreen(false)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [fullscreen])
+
+  const previewSrc =
+    device === 'iphone' ? selected.iphone?.preview : selected.desktop?.[ratio]
+
+  const id = lineId(selected.id, device, device === 'desktop' ? ratio : undefined)
   const inCart = has(id)
+  const available = Boolean(previewSrc)
 
   const addToCart = () => {
-    if (!price) return
+    if (!available) return
     add({
       id,
-      slug: selected.slug,
+      slug: selected.id,
       title: selected.title,
       device,
       ratio: device === 'desktop' ? ratio : undefined,
-      price,
-      preview: selected.preview,
+      price: selected.price,
+      preview: selected.thumbnail,
     })
   }
 
-  const tab = (value: Device, label: string) => (
-    <button
-      key={value}
-      onClick={() => setDevice(value)}
-      onMouseEnter={() => setMode('hover')}
-      onMouseLeave={() => setMode('default')}
-      className={`border-b pb-1 text-xs uppercase tracking-[0.2em] transition-colors duration-300 ${
-        device === value ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'
-      }`}
-    >
-      {label}
-    </button>
-  )
+  const optionClass = (active: boolean) =>
+    `px-4 py-2 text-[11px] uppercase tracking-[0.18em] transition-colors duration-300 ${
+      active ? 'bg-ink text-void' : 'border border-line text-muted hover:border-ink hover:text-ink'
+    }`
 
   return (
     <PageTransition>
-      <div className="mx-auto max-w-6xl px-6 pb-24 pt-32 md:px-10 md:pt-40">
+      <div className="mx-auto max-w-6xl px-6 pb-32 pt-28 md:px-10 md:pt-36">
         <TextReveal as="span" inView={false}>
-          <h1 className="font-display text-[clamp(2.5rem,8vw,6rem)] font-black uppercase leading-[0.9] tracking-tight">
+          <h1 className="font-display text-[clamp(2rem,6vw,4rem)] font-black uppercase leading-[0.9] tracking-tight">
             Wallpaper
           </h1>
         </TextReveal>
 
-        <p className="mt-6 max-w-md text-base text-muted md:text-lg">
-          Photographs sized for your screen.
-        </p>
-
-        {/* selected item */}
-        <div className="mt-16 grid gap-10 md:mt-20 md:grid-cols-[1.1fr_1fr] md:gap-16">
-          <div className="relative overflow-hidden bg-line">
-            <AnimatePresence mode="wait">
-              <motion.img
-                key={`${selected.slug}-${device}`}
-                src={selected.preview}
-                alt={selected.title}
-                initial={{ opacity: 0, scale: 1.02 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                className={`w-full object-cover grayscale contrast-110 ${
-                  device === 'iphone' ? 'aspect-[9/16]' : 'aspect-[16/10]'
-                }`}
-              />
-            </AnimatePresence>
-          </div>
-
-          <div className="flex flex-col justify-center">
+        {/* device preview leads on mobile, sits right on desktop */}
+        <div className="mt-10 grid gap-12 md:mt-14 md:grid-cols-[minmax(0,360px)_minmax(0,1fr)] md:gap-16">
+          <div className="order-2 flex flex-col justify-center md:order-1">
             <p className="text-sm text-muted">{selected.number}</p>
-            <h2 className="mt-2 font-display text-4xl font-black uppercase leading-none tracking-tight md:text-6xl">
+            <h2 className="mt-1 font-display text-4xl font-black uppercase leading-none tracking-tight md:text-5xl">
               {selected.title}
             </h2>
-            <p className="mt-3 text-xs uppercase tracking-[0.2em] text-muted">
+            <p className="mt-3 text-xs uppercase tracking-[0.2em] text-muted">Digital wallpaper</p>
+            <p className="mt-1 text-xs text-muted">
               {selected.location} · {selected.year}
             </p>
 
-            <div className="mt-10 flex gap-6">
-              {tab('iphone', 'iPhone')}
-              {tab('desktop', 'Desktop')}
+            <p className="mt-8 font-display text-2xl font-black tracking-tight">
+              {formatPrice(selected.price)}
+            </p>
+
+            {/* device */}
+            <div className="mt-8 flex gap-6">
+              {selected.iphone && (
+                <button
+                  onClick={() => setDevice('iphone')}
+                  onMouseEnter={() => setMode('hover')}
+                  onMouseLeave={() => setMode('default')}
+                  className={`border-b pb-1 text-xs uppercase tracking-[0.2em] transition-colors duration-300 ${
+                    device === 'iphone' ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'
+                  }`}
+                >
+                  iPhone
+                </button>
+              )}
+              {ratios.length > 0 && (
+                <button
+                  onClick={() => setDevice('desktop')}
+                  onMouseEnter={() => setMode('hover')}
+                  onMouseLeave={() => setMode('default')}
+                  className={`border-b pb-1 text-xs uppercase tracking-[0.2em] transition-colors duration-300 ${
+                    device === 'desktop' ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'
+                  }`}
+                >
+                  Desktop
+                </button>
+              )}
             </div>
 
-            {device === 'desktop' && (
-              <div className="mt-6 flex flex-wrap gap-3">
-                {DESKTOP_RATIOS.map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => setRatio(r)}
-                    onMouseEnter={() => setMode('hover')}
-                    onMouseLeave={() => setMode('default')}
-                    className={`border px-3 py-1.5 text-xs tracking-[0.1em] transition-colors duration-300 ${
-                      ratio === r ? 'border-ink text-ink' : 'border-line text-muted hover:border-ink hover:text-ink'
-                    }`}
-                  >
-                    {r}
-                  </button>
-                ))}
+            {/* device-specific options */}
+            <div className="mt-6">
+              <p className="mb-3 text-[10px] uppercase tracking-[0.25em] text-muted">
+                {device === 'iphone' ? 'Screen' : 'Ratio'}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {device === 'iphone'
+                  ? (['lock', 'home'] as IPhoneMode[]).map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setScreen(m)}
+                        onMouseEnter={() => setMode('hover')}
+                        onMouseLeave={() => setMode('default')}
+                        className={optionClass(screen === m)}
+                      >
+                        {m === 'lock' ? 'Lock screen' : 'Home screen'}
+                      </button>
+                    ))
+                  : ratios.map((r) => (
+                      <button
+                        key={r}
+                        onClick={() => setRatio(r)}
+                        onMouseEnter={() => setMode('hover')}
+                        onMouseLeave={() => setMode('default')}
+                        className={optionClass(ratio === r)}
+                      >
+                        {r}
+                      </button>
+                    ))}
               </div>
-            )}
+            </div>
 
-            <p className="mt-10 font-display text-2xl font-black tracking-tight">
-              {available && price ? formatPrice(price) : 'Not available'}
-            </p>
+            <ul className="mt-8 space-y-1.5">
+              {INCLUDED.map((line) => (
+                <li key={line} className="flex items-center gap-2 text-xs text-muted">
+                  <span className="text-ink">✓</span>
+                  {line}
+                </li>
+              ))}
+            </ul>
 
             <button
               onClick={addToCart}
               disabled={!available || inCart}
               onMouseEnter={() => setMode('hover')}
               onMouseLeave={() => setMode('default')}
-              className="group mt-6 inline-flex w-fit items-center gap-3 border-b border-ink pb-1 font-display text-xl font-black uppercase tracking-tight transition-colors duration-300 hover:text-muted disabled:opacity-40 md:text-2xl"
+              className="mt-8 w-full bg-ink px-6 py-4 font-display text-sm font-black uppercase tracking-[0.15em] text-void transition-opacity duration-300 hover:opacity-85 disabled:opacity-40 sm:w-auto"
             >
               {inCart ? 'In cart' : 'Add to cart'}
-              <span className="transition-transform duration-300 group-hover:translate-x-2">→</span>
             </button>
+
+            <button
+              onClick={() => setFullscreen(true)}
+              disabled={!available}
+              onMouseEnter={() => setMode('hover')}
+              onMouseLeave={() => setMode('default')}
+              className="mt-4 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-muted transition-colors duration-300 hover:text-ink disabled:opacity-40"
+            >
+              Preview fullscreen
+              <span aria-hidden="true">⤢</span>
+            </button>
+          </div>
+
+          {/* the device — only the photograph crossfades, the frame never moves */}
+          <div className="order-1 flex items-center justify-center md:order-2">
+            {available ? (
+              <div className="w-full">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={`${selected.id}-${device}-${screen}-${ratio}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.25, ease: 'easeOut' }}
+                  >
+                    {device === 'iphone' ? (
+                      <IPhoneScreen src={previewSrc!} mode={screen} />
+                    ) : (
+                      <DesktopScreen src={previewSrc!} ratio={ratio} />
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            ) : (
+              <p className="text-sm text-muted">Not available in this format.</p>
+            )}
           </div>
         </div>
 
-        {/* the collection */}
-        <div className="mt-24 border-t border-line pt-10 md:mt-32">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted">
-            Collection — {String(wallpapers.length).padStart(2, '0')}
+        {/* catalogue — lazy, thumbnails only */}
+        <div className="mt-20 border-t border-line pt-8 md:mt-28">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-muted">
+            All wallpapers — {String(wallpapers.length).padStart(2, '0')}
           </p>
 
-          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="mt-6 flex gap-3 overflow-x-auto pb-3">
             {wallpapers.map((w) => (
               <button
-                key={w.slug}
-                onClick={() => setSelected(w)}
+                key={w.id}
+                onClick={() => setSelectedId(w.id)}
                 onMouseEnter={() => setMode('project')}
                 onMouseLeave={() => setMode('default')}
-                className="group text-left"
+                className="group shrink-0 text-left"
               >
-                <div className="relative aspect-[3/4] w-full overflow-hidden bg-line">
+                <div
+                  className={`relative aspect-[3/4] w-24 overflow-hidden bg-line ring-1 transition-all duration-300 sm:w-28 ${
+                    selected.id === w.id ? 'ring-ink' : 'ring-transparent'
+                  }`}
+                >
                   <img
-                    src={w.preview}
+                    src={w.thumbnail}
                     alt={w.title}
                     loading="lazy"
-                    className={`h-full w-full object-cover grayscale contrast-110 transition-all duration-500 group-hover:scale-[1.03] ${
-                      selected.slug === w.slug ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'
+                    decoding="async"
+                    className={`h-full w-full object-cover transition-opacity duration-300 ${
+                      selected.id === w.id ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'
                     }`}
                   />
                 </div>
-                <p className="mt-2 font-display text-sm font-black uppercase tracking-tight">
-                  {w.number} {w.title}
-                </p>
+                <p className="mt-2 text-[10px] uppercase tracking-[0.15em] text-muted">{w.number}</p>
               </button>
             ))}
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {fullscreen && previewSrc && (
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            onClick={() => setFullscreen(false)}
+            className="fixed inset-0 z-[90] flex items-center justify-center bg-black/95 p-6"
+          >
+            <img src={previewSrc} alt={selected.title} className="max-h-full max-w-full object-contain" />
+            <span className="absolute bottom-6 text-[11px] uppercase tracking-[0.2em] text-white/60">
+              Click anywhere to close
+            </span>
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       <Footer />
     </PageTransition>
