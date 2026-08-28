@@ -20,13 +20,13 @@ export const SIZE_PRICES: Record<string, number> = {
 }
 
 export const LIMITED_PREMIUM = 1.6
-export const FRAME_PRICES: Record<string, number> = { none: 0, black: 6000, oak: 7500 }
+export const FRAME_PRICES: Record<string, number> = { none: 0, black: 6000, oak: 7500, white: 6000 }
 
 export interface OrderItem {
   id: string
   size: string
   edition: 'open' | 'limited'
-  frame: 'none' | 'black' | 'oak'
+  frame: 'none' | 'black' | 'oak' | 'white'
 }
 
 /** Accepts only combinations we actually sell. */
@@ -64,7 +64,8 @@ export function priceOf(item: OrderItem) {
 
 export function describe(item: OrderItem) {
   const [w, h] = item.size.split('x')
-  const frame = item.frame === 'none' ? 'Unframed' : `${item.frame === 'oak' ? 'Oak' : 'Black'} frame`
+  const names: Record<string, string> = { none: 'Unframed', black: 'Black frame', oak: 'Natural wood frame', white: 'White frame' }
+  const frame = names[item.frame] ?? 'Framed'
   const edition = item.edition === 'limited' ? 'Edition of 25' : 'Open edition'
   return `${w} × ${h} cm · ${edition} · ${frame}`
 }

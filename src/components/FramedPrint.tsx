@@ -1,22 +1,29 @@
 import type { Orientation, PrintSize } from '../data/prints'
 
-export type FrameStyle = 'black' | 'oak' | 'none'
+export type FrameStyle = 'black' | 'oak' | 'white' | 'none'
 
 /**
- * A print shown the way it's actually framed: the frame takes the chosen size's
- * proportions, and the photograph sits inside a paper mount that absorbs any
- * difference in aspect ratio — which is what a mount does in real framing.
- * Nothing is stretched or re-cropped.
+ * A framed print built to read as a physical object rather than an image in a
+ * box. The layers, outside in:
  *
- * Frame and mount are nested padding, not borders: CSS border-width rejects
- * percentages, so a percentage border silently collapses to 0.
+ *   wall shadow   — soft cast shadow plus a tight contact shadow at the base
+ *   moulding      — with a lit top-left edge and a shaded bottom-right edge
+ *   rabbet        — the dark inner lip where the moulding meets the glazing
+ *   glazing       — a single low-opacity diagonal sheen, no glare
+ *   mount         — warm paper with a bevel-cut inner edge
+ *   photograph    — untouched; only ever scaled, never filtered or re-cropped
  *
- * Deliberately restrained — one soft shadow, no gloss, no reflections.
+ * Every effect is deliberately weak. Overdo any of them and it stops looking
+ * photographed and starts looking rendered.
  */
-const FRAMES: Record<FrameStyle, { color: string; width: number; shadow: string }> = {
-  black: { color: '#17171a', width: 2.2, shadow: '0 18px 40px -18px rgba(0,0,0,0.45)' },
-  oak: { color: '#c2a882', width: 2.6, shadow: '0 18px 40px -18px rgba(0,0,0,0.34)' },
-  none: { color: 'transparent', width: 0, shadow: '0 14px 34px -18px rgba(0,0,0,0.28)' },
+const FRAMES: Record<
+  FrameStyle,
+  { face: string; lit: string; shade: string; width: number }
+> = {
+  black: { face: '#1b1b1e', lit: '#33333a', shade: '#0c0c0e', width: 2.4 },
+  oak: { face: '#c3a883', lit: '#d8c19c', shade: '#a08a68', width: 2.8 },
+  white: { face: '#f2efe9', lit: '#ffffff', shade: '#d6d1c7', width: 2.6 },
+  none: { face: 'transparent', lit: 'transparent', shade: 'transparent', width: 0 },
 }
 
 export function FramedPrint({
@@ -37,33 +44,77 @@ export function FramedPrint({
   const ratio =
     orientation === 'portrait' ? `${size.short} / ${size.long}` : `${size.long} / ${size.short}`
 
-  // Bigger prints carry proportionally wider margins, as they do in practice.
-  const mat = size.long >= 100 ? 10 : size.long >= 70 ? 8.5 : 7
-
+  // Bigger prints carry proportionally wider mounts, as they do in practice.
+  const mat = size.long >= 100 ? 9.5 : size.long >= 70 ? 8 : 6.5
   const f = FRAMES[frame]
+  const framed = frame !== 'none'
 
   return (
-    <div className={`mx-auto w-full ${className}`}>
-      {/* frame */}
+    <div className={`relative mx-auto w-full ${className}`} style={{ aspectRatio: ratio }}>
+      {/* cast shadow on the wall — offset down, never symmetrical */}
       <div
-        className="w-full"
+        className="pointer-events-none absolute inset-0"
         style={{
-          aspectRatio: ratio,
-          padding: `${f.width}%`,
-          background: f.color,
-          boxShadow: f.shadow,
+          transform: 'translate(1.5%, 2.5%)',
+          filter: 'blur(14px)',
+          background: 'rgba(38,32,26,0.30)',
+          zIndex: 0,
+        }}
+      />
+      {/* tight contact shadow — what stops it looking like it floats */}
+      <div
+        className="pointer-events-none absolute inset-x-[2%] bottom-[-1%] h-[3%]"
+        style={{ filter: 'blur(5px)', background: 'rgba(38,32,26,0.34)', zIndex: 0 }}
+      />
+
+      {/* moulding */}
+      <div
+        className="absolute inset-0 overflow-hidden"
+        style={{
+          zIndex: 1,
+          padding: framed ? `${f.width}%` : 0,
+          background: framed
+            ? `linear-gradient(145deg, ${f.lit} 0%, ${f.face} 34%, ${f.face} 66%, ${f.shade} 100%)`
+            : 'transparent',
+          boxShadow: framed ? 'inset 0 0 0 1px rgba(0,0,0,0.35)' : 'none',
         }}
       >
-        {/* archival paper mount */}
+        {/* rabbet — the dark lip inside the moulding */}
         <div
-          className="flex h-full w-full items-center justify-center bg-[#f6f4ef]"
-          style={{ padding: `${mat}%` }}
+          className="relative h-full w-full"
+          style={{
+            boxShadow: framed
+              ? 'inset 0 0 0 1px rgba(0,0,0,0.5), inset 0 2px 6px rgba(0,0,0,0.32)'
+              : '0 0 0 1px rgba(0,0,0,0.10)',
+          }}
         >
-          <img
-            src={src}
-            alt={alt}
-            className="max-h-full max-w-full object-contain"
-            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.18)' }}
+          {/* mount */}
+          <div
+            className="flex h-full w-full items-center justify-center"
+            style={{
+              padding: `${mat}%`,
+              background: 'linear-gradient(150deg, #faf8f3 0%, #f4f1ea 55%, #ece8df 100%)',
+            }}
+          >
+            {/* bevel cut + the photograph */}
+            <div
+              className="relative max-h-full max-w-full"
+              style={{
+                boxShadow:
+                  '0 0 0 1px rgba(255,255,255,0.9), 0 0 0 2px rgba(140,130,115,0.45), 0 2px 5px rgba(60,50,40,0.20)',
+              }}
+            >
+              <img src={src} alt={alt} className="block max-h-full max-w-full object-contain" />
+            </div>
+          </div>
+
+          {/* glazing — one weak diagonal sheen */}
+          <div
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                'linear-gradient(118deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 18%, rgba(255,255,255,0) 34%, rgba(255,255,255,0) 100%)',
+            }}
           />
         </div>
       </div>

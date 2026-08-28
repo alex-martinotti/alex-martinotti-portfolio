@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { PageTransition } from '../components/PageTransition'
 import { TextReveal } from '../components/TextReveal'
 import { Footer } from '../components/Footer'
-import { FramedPrint, type FrameStyle } from '../components/FramedPrint'
-import { RoomScene, type Room } from '../components/RoomScene'
+import { type FrameStyle } from '../components/FramedPrint'
+import { RoomScene, ROOM_ORDER, ROOM_LABELS, type Room } from '../components/RoomScene'
 import { SizeGuide } from '../components/SizeGuide'
 import { useCursor } from '../lib/cursor-context'
 import { useCart, lineId } from '../lib/cart-context'
@@ -21,8 +21,8 @@ import {
 
 const FRAMES: { id: FrameStyle; label: string }[] = [
   { id: 'black', label: 'Black' },
-  { id: 'oak', label: 'Oak' },
-  { id: 'none', label: 'Unframed' },
+  { id: 'oak', label: 'Natural wood' },
+  { id: 'white', label: 'White' },
 ]
 
 const SPEC = [
@@ -42,6 +42,7 @@ export function Prints() {
   const [frame, setFrame] = useState<FrameStyle>('black')
   const [filter, setFilter] = useState<Collection | 'All'>('All')
   const [zoom, setZoom] = useState(false)
+  const [view, setView] = useState<Room>('living')
 
   const selected = useMemo(() => prints.find((p) => p.id === selectedId) ?? prints[0], [selectedId])
   const size = useMemo(() => SIZES.find((s) => s.id === sizeId) ?? SIZES[1], [sizeId])
@@ -181,33 +182,48 @@ export function Prints() {
             </ul>
           </div>
 
-          {/* the print on a wall */}
-          <div className="order-1 flex flex-col items-center justify-center md:order-2">
-            <div className="flex w-full items-center justify-center rounded-sm bg-[#e9e5df] p-8 md:p-14">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={`${selected.id}-${size.id}-${frame}`}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.25, ease: 'easeOut' }}
-                  className={selected.orientation === 'portrait' ? 'w-[62%] md:w-[52%]' : 'w-[86%] md:w-[78%]'}
+          {/* the print, in a room */}
+          <div className="order-1 flex flex-col md:order-2">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`${selected.id}-${size.id}-${frame}-${view}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+              >
+                <RoomScene
+                  src={selected.image}
+                  alt={selected.title}
+                  room={view}
+                  sizeId={size.id}
+                  orientation={selected.orientation}
+                  frame={frame}
+                />
+              </motion.div>
+            </AnimatePresence>
+
+            {/* environment views */}
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+              {ROOM_ORDER.map((r, i) => (
+                <button
+                  key={r}
+                  onClick={() => setView(r)}
+                  onMouseEnter={() => setMode('hover')}
+                  onMouseLeave={() => setMode('default')}
+                  className={`text-[10px] uppercase tracking-[0.2em] transition-colors duration-300 ${
+                    view === r ? 'text-ink' : 'text-muted hover:text-ink'
+                  }`}
                 >
-                  <FramedPrint
-                    src={selected.image}
-                    alt={selected.title}
-                    size={size}
-                    orientation={selected.orientation}
-                    frame={frame}
-                  />
-                </motion.div>
-              </AnimatePresence>
+                  {String(i + 1).padStart(2, '0')} {ROOM_LABELS[r]}
+                </button>
+              ))}
             </div>
 
-            <div className="mt-4 flex w-full items-center justify-between">
+            <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
               <p className="text-[10px] uppercase tracking-[0.2em] text-muted">
                 {sizeLabel(size, selected.orientation)}
-                {frame !== 'none' && ` · ${frame === 'oak' ? 'Oak' : 'Black'} frame`}
+                {frame !== 'none' && ` · ${frame === 'oak' ? 'Oak' : frame === 'white' ? 'White' : 'Black'} frame`}
               </p>
               <button
                 onClick={() => setZoom(true)}
@@ -215,34 +231,10 @@ export function Prints() {
                 onMouseLeave={() => setMode('default')}
                 className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-muted transition-colors duration-300 hover:text-ink"
               >
-                View print <span aria-hidden="true">⤢</span>
+                View photograph <span aria-hidden="true">⤢</span>
               </button>
             </div>
           </div>
-        </div>
-
-        {/* in a room */}
-        <div className="mt-20 md:mt-28">
-          <p className="text-[10px] uppercase tracking-[0.3em] text-muted">
-            {sizeLabel(size, selected.orientation)} in a room
-          </p>
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {(['living', 'kitchen', 'bedroom'] as Room[]).map((room, i) => (
-              <RoomScene
-                key={room}
-                src={selected.image}
-                alt={selected.title}
-                room={room}
-                sizeId={size.id}
-                orientation={selected.orientation}
-                frame={frame}
-                count={i === 1 ? 3 : i === 2 ? 2 : 1}
-              />
-            ))}
-          </div>
-          <p className="mt-3 text-[10px] uppercase tracking-[0.2em] text-muted">
-            Rooms shown to scale — a 260 cm wall
-          </p>
         </div>
 
         {/* size guide */}

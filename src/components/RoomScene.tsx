@@ -1,29 +1,39 @@
 import { FramedPrint, type FrameStyle } from './FramedPrint'
 import { SIZES, type Orientation } from '../data/prints'
 
-export type Room = 'living' | 'kitchen' | 'bedroom'
+export type Room = 'living' | 'kitchen' | 'bedroom' | 'office' | 'detail'
+
+export const ROOM_ORDER: Room[] = ['living', 'kitchen', 'bedroom', 'office', 'detail']
+
+export const ROOM_LABELS: Record<Room, string> = {
+  living: 'Living room',
+  kitchen: 'Kitchen',
+  bedroom: 'Bedroom',
+  office: 'Office',
+  detail: 'Detail',
+}
 
 /**
- * Shows a print hanging in a room so the size reads at human scale.
+ * Interiors rendered as warm tonal architecture — wall, floor, daylight,
+ * furniture silhouettes — with the real framed print hung in them.
  *
- * The interiors are drawn — warm tonal blocks and furniture silhouettes, in
- * the site's own language — rather than photographed or generated. A stock or
- * AI-rendered living room would fight the photography and date badly; this
- * stays quiet and lets the print be the only detailed thing on screen.
- *
- * Wall height is treated as 260cm, so a 100×140 print genuinely occupies more
- * of the wall than a 30×40 one. The comparison is honest, not decorative.
+ * Scale is honest: the wall is 260cm, so a 100×140 print genuinely covers
+ * more of it than a 50×70. Changing size visibly changes the artwork's
+ * presence in the room, which is the whole point of these views.
  */
 const WALL_CM = 260
 
-const ROOMS: Record<Room, { label: string; wall: string; floor: string }> = {
-  living: { label: 'Living room', wall: '#e7e2da', floor: '#cfc6b8' },
-  kitchen: { label: 'Kitchen', wall: '#e4e1db', floor: '#bdb3a3' },
-  bedroom: { label: 'Bedroom', wall: '#e9e4dc', floor: '#d3cabc' },
+const ROOMS: Record<
+  Exclude<Room, 'detail'>,
+  { wall: string; floor: string; floorPct: number }
+> = {
+  living: { wall: '#e6e0d6', floor: '#c9bfae', floorPct: 24 },
+  kitchen: { wall: '#e3e0d9', floor: '#b8ad9c', floorPct: 22 },
+  bedroom: { wall: '#e9e3d9', floor: '#cfc5b5', floorPct: 26 },
+  office: { wall: '#e4e2dc', floor: '#c2b8a8', floorPct: 24 },
 }
 
-/** Height of the print as a % of the scene, given the room's wall height. */
-const scaleFor = (longCm: number, orientation: Orientation) => {
+const heightPctFor = (longCm: number, orientation: Orientation) => {
   const cm = orientation === 'portrait' ? longCm : longCm * (100 / 140)
   return (cm / WALL_CM) * 100
 }
@@ -35,7 +45,6 @@ export function RoomScene({
   sizeId,
   orientation,
   frame,
-  count = 1,
 }: {
   src: string
   alt: string
@@ -43,82 +52,135 @@ export function RoomScene({
   sizeId: string
   orientation: Orientation
   frame: FrameStyle
-  count?: 1 | 2 | 3
 }) {
   const size = SIZES.find((s) => s.id === sizeId) ?? SIZES[1]
-  const heightPct = scaleFor(size.long, orientation)
+
+  /* ── Detail: a corner of the frame, enlarged ────────────────────────── */
+  if (room === 'detail') {
+    return (
+      <div
+        className="relative w-full overflow-hidden bg-[#ded7cb]"
+        style={{ aspectRatio: '4 / 3' }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(115deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 55%, rgba(0,0,0,0.06) 100%)',
+          }}
+        />
+        {/* enlarged and offset so the frame's top-left corner — moulding,
+            mount, bevel and the paper edge — sits in the middle of the crop */}
+        <div className="absolute left-[-6%] top-[-8%] w-[260%]">
+          <FramedPrint
+            src={src}
+            alt={alt}
+            size={size}
+            orientation={orientation}
+            frame={frame === 'none' ? 'black' : frame}
+          />
+        </div>
+        <p className="absolute bottom-4 left-4 text-[10px] uppercase tracking-[0.2em] text-ink/45">
+          Mount, bevel and frame edge
+        </p>
+      </div>
+    )
+  }
+
   const scene = ROOMS[room]
+  const artH = heightPctFor(size.long, orientation)
+  // Hung so the centre sits near eye level whatever the size.
+  const top = Math.max(6, 46 - artH / 2)
+  const count = room === 'kitchen' ? 3 : room === 'bedroom' ? 2 : 1
 
   return (
-    <div className="relative w-full overflow-hidden" style={{ aspectRatio: '16 / 10' }}>
-      {/* wall + floor */}
+    <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4 / 3' }}>
       <div className="absolute inset-0" style={{ background: scene.wall }} />
-      <div className="absolute inset-x-0 bottom-0 h-[22%]" style={{ background: scene.floor }} />
-      {/* soft daylight from the left */}
+      <div
+        className="absolute inset-x-0 bottom-0"
+        style={{ height: `${scene.floorPct}%`, background: scene.floor }}
+      />
+      {/* skirting */}
+      <div
+        className="absolute inset-x-0"
+        style={{ bottom: `${scene.floorPct}%`, height: '1.5%', background: 'rgba(255,255,255,0.55)' }}
+      />
+      {/* daylight raking in from the left */}
       <div
         className="absolute inset-0"
         style={{
           background:
-            'linear-gradient(100deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 45%, rgba(0,0,0,0.05) 100%)',
+            'linear-gradient(105deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.12) 38%, rgba(0,0,0,0.03) 72%, rgba(0,0,0,0.10) 100%)',
         }}
       />
 
-      {/* the print(s), hung at eye level */}
+      {/* the artwork */}
       <div
-        className="absolute inset-x-0 flex items-end justify-center gap-[3%]"
-        style={{ top: '14%', height: `${heightPct}%` }}
+        className="absolute inset-x-0 flex items-start justify-center gap-[2.5%] px-[8%]"
+        style={{ top: `${top}%`, height: `${artH}%` }}
       >
         {Array.from({ length: count }).map((_, i) => (
-          <div key={i} className="h-full">
-            <div className="h-full" style={{ aspectRatio: orientation === 'portrait' ? `${size.short} / ${size.long}` : `${size.long} / ${size.short}` }}>
-              <FramedPrint
-                src={src}
-                alt={alt}
-                size={size}
-                orientation={orientation}
-                frame={frame === 'none' ? 'black' : frame}
-              />
-            </div>
+          <div
+            key={i}
+            className="h-full"
+            style={{
+              aspectRatio:
+                orientation === 'portrait'
+                  ? `${size.short} / ${size.long}`
+                  : `${size.long} / ${size.short}`,
+            }}
+          >
+            <FramedPrint
+              src={src}
+              alt={alt}
+              size={size}
+              orientation={orientation}
+              frame={frame === 'none' ? 'black' : frame}
+            />
           </div>
         ))}
       </div>
 
-      {/* furniture — silhouettes only, never competing with the print */}
+      {/* furniture — silhouettes only, always subordinate to the print */}
       {room === 'living' && (
-        <div className="absolute inset-x-0 bottom-[22%] flex items-end justify-center">
-          <div className="relative h-[70px] w-[54%] max-w-[420px] md:h-[86px]">
-            <div className="absolute inset-x-0 bottom-[14px] top-0 rounded-[3px] bg-[#a89684]/85" />
-            <div className="absolute bottom-0 left-[8%] h-[16px] w-[3px] bg-[#8e7d6c]" />
-            <div className="absolute bottom-0 right-[8%] h-[16px] w-[3px] bg-[#8e7d6c]" />
-            {/* lamp */}
-            <div className="absolute -top-[26px] left-[10%] h-[26px] w-[30px] rounded-t-full bg-[#f3efe8]" />
+        <div className="absolute inset-x-0" style={{ bottom: `${scene.floorPct}%` }}>
+          <div className="relative mx-auto h-[70px] w-[62%] max-w-[440px] md:h-[92px]">
+            <div className="absolute inset-x-0 bottom-[13px] top-[16px] rounded-t-[6px] bg-[#b7a794]" />
+            <div className="absolute inset-x-[6%] bottom-[13px] top-0 rounded-t-[10px] bg-[#c6b6a2]" />
+            <div className="absolute bottom-0 left-[10%] h-[14px] w-[4px] bg-[#8d7d6b]" />
+            <div className="absolute bottom-0 right-[10%] h-[14px] w-[4px] bg-[#8d7d6b]" />
           </div>
         </div>
       )}
 
       {room === 'kitchen' && (
         <>
-          <div className="absolute inset-x-0 bottom-[22%] h-[62px] bg-[#9d9184]/80 md:h-[78px]" />
-          <div className="absolute inset-x-0 bottom-[calc(22%+62px)] h-[5px] bg-[#efeae1] md:bottom-[calc(22%+78px)]" />
-          {/* pendant lights */}
-          {[26, 74].map((left) => (
-            <div key={left} className="absolute top-0" style={{ left: `${left}%` }}>
-              <div className="mx-auto h-[26%] w-[1px] bg-[#a89684]/70" />
-              <div className="h-[16px] w-[34px] -translate-x-1/2 rounded-b-full bg-[#8e7d6c]/80" />
-            </div>
-          ))}
+          <div
+            className="absolute inset-x-0"
+            style={{ bottom: `${scene.floorPct}%`, height: '20%', background: '#9c9083' }}
+          />
+          <div
+            className="absolute inset-x-0"
+            style={{ bottom: `calc(${scene.floorPct}% + 20%)`, height: '2%', background: '#efeae1' }}
+          />
         </>
       )}
 
       {room === 'bedroom' && (
-        <div className="absolute inset-x-0 bottom-[22%] flex items-end justify-center">
-          <div className="h-[54px] w-[46%] max-w-[360px] rounded-t-[4px] bg-[#b3a595]/85 md:h-[66px]" />
+        <div className="absolute inset-x-0" style={{ bottom: `${scene.floorPct}%` }}>
+          <div className="mx-auto h-[58px] w-[54%] max-w-[400px] rounded-t-[6px] bg-[#c8bcab] md:h-[76px]" />
         </div>
       )}
 
-      <p className="absolute left-4 top-4 text-[10px] uppercase tracking-[0.2em] text-ink/50">
-        {scene.label}
-      </p>
+      {room === 'office' && (
+        <div className="absolute inset-x-0" style={{ bottom: `${scene.floorPct}%` }}>
+          <div className="relative mx-auto h-[62px] w-[52%] max-w-[380px] md:h-[80px]">
+            <div className="absolute inset-x-0 top-0 h-[5px] bg-[#a4907a]" />
+            <div className="absolute bottom-0 left-[8%] top-[5px] w-[4px] bg-[#8d7d6b]" />
+            <div className="absolute bottom-0 right-[8%] top-[5px] w-[4px] bg-[#8d7d6b]" />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
