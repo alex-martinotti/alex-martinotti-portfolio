@@ -36,54 +36,6 @@ export const SIZES: PrintSize[] = [
 /** A numbered, signed edition carries a premium over the open edition. */
 export const LIMITED_PREMIUM = 1.6
 
-export interface LifestyleShot {
-  id: string
-  label: string
-  src: string
-}
-
-export interface Print {
-  id: string
-  number: string
-  title: string
-  collection: Collection
-  location: string
-  year: string
-  orientation: Orientation
-  /** Native-aspect print file. */
-  image: string
-  thumbnail: string
-  /**
-   * Real photography of this print hanging in a space. Optional — a print
-   * without shots simply doesn't show the gallery, so the catalogue can grow
-   * to 200 photographs without needing a shoot for each one.
-   */
-  lifestyle?: LifestyleShot[]
-}
-
-const media = (id: string, file: string) => `/media/prints/${id}/${file}`
-const shot = (file: string) => `/media/lifestyle/${file}.jpg`
-
-/**
- * The eight-scene interior set. These show a print hanging in real spaces and
- * are used for the page-level "In a space" editorial section, since they were
- * shot with one photograph rather than per-product.
- */
-export const SPACE_SHOTS: LifestyleShot[] = [
-  { id: 'living', label: 'Living room', src: shot('living') },
-  { id: 'kitchen', label: 'Kitchen', src: shot('kitchen') },
-  { id: 'bedroom', label: 'Bedroom', src: shot('bedroom') },
-  { id: 'office', label: 'Office', src: shot('office') },
-  { id: 'hallway', label: 'Hallway', src: shot('hallway') },
-  { id: 'staircase', label: 'Staircase', src: shot('staircase') },
-  { id: 'dining', label: 'Dining room', src: shot('dining') },
-  { id: 'detail', label: 'Detail', src: shot('detail') },
-]
-
-const PARASOLS_SHOTS: LifestyleShot[] = [
-  { id: 'living', label: 'Living room', src: shot('parasols-living') },
-]
-
 const p = (
   id: string,
   title: string,
@@ -91,7 +43,6 @@ const p = (
   location: string,
   year: string,
   orientation: Orientation,
-  lifestyle?: LifestyleShot[],
 ): Omit<Print, 'number'> => ({
   id,
   title,
@@ -101,7 +52,6 @@ const p = (
   orientation,
   image: media(id, 'print.jpg'),
   thumbnail: media(id, 'thumb.jpg'),
-  ...(lifestyle ? { lifestyle } : {}),
 })
 
 /** Ordered strongest-first. */
@@ -112,7 +62,7 @@ const CATALOGUE: Omit<Print, 'number'>[] = [
   p('inlet', 'Inlet', 'Salt', 'Norway', '2026', 'portrait'),
   p('lift', 'Lift', 'Thin Air', 'Austria', '2026', 'portrait'),
   p('nave', 'Nave', 'Hard Edges', 'Berlin', '2026', 'portrait'),
-  p('parasols', 'Parasols', 'Salt', 'Italy', '2026', 'portrait', PARASOLS_SHOTS),
+  p('parasols', 'Parasols', 'Salt', 'Italy', '2026', 'portrait'),
   p('window-seat', 'Window Seat', 'In Transit', 'Somewhere', '2026', 'portrait'),
   p('shelters', 'Shelters', 'Salt', 'Italy', '2026', 'portrait'),
   p('terraces', 'Terraces', 'Hard Edges', 'Rotterdam', '2026', 'portrait'),
