@@ -1,89 +1,70 @@
-import crypto from 'node:crypto'
-
 /**
- * Server-side price list. Prices are NEVER taken from the browser — a client
- * could post €0.01 otherwise. The cart only sends item ids; the server looks
- * up what they actually cost.
+ * Server-side price list for prints. Prices are NEVER taken from the browser —
+ * a client could post €1 otherwise. The cart sends the print id and the size /
+ * edition it wants; the server decides what that costs.
  *
- * Keep the ids in sync with src/data/wallpapers.ts.
+ * Keep ids in sync with src/data/prints.ts.
  */
-export const PRICE_CENTS = 700
-
-export const WALLPAPER_IDS = [
-  'lattice',
-  'the-loop',
-  'tower',
-  'inlet',
-  'lift',
-  'nave',
-  'parasols',
-  'window-seat',
-  'shelters',
-  'terraces',
-  'range',
-  'downtown',
-  'through',
-  'spire',
-  'cliffs',
-  'siesta',
-  'saigon',
-  'ridge',
-  'two-up',
-  'overpass',
-  'herd',
-  'roma',
-  'gable',
+export const PRINT_IDS = [
+  'lattice', 'the-loop', 'tower', 'inlet', 'lift', 'nave', 'parasols',
+  'window-seat', 'shelters', 'terraces', 'range', 'downtown', 'through',
+  'spire', 'cliffs', 'siesta', 'saigon', 'ridge', 'two-up', 'overpass',
+  'herd', 'roma', 'gable',
 ] as const
 
-export const VALID_FORMATS = ['iphone', '16:9', '16:10', '4:3', '5:4'] as const
-export type Format = (typeof VALID_FORMATS)[number]
+export const SIZE_PRICES: Record<string, number> = {
+  '30x40': 12000,
+  '50x70': 25000,
+  '70x100': 42000,
+  '100x140': 70000,
+}
+
+export const LIMITED_PREMIUM = 1.6
+export const FRAME_PRICES: Record<string, number> = { none: 0, black: 6000, oak: 7500 }
 
 export interface OrderItem {
   id: string
-  format: Format
+  size: string
+  edition: 'open' | 'limited'
+  frame: 'none' | 'black' | 'oak'
 }
 
-/** Accepts only ids/formats we actually sell. */
+/** Accepts only combinations we actually sell. */
 export function parseItems(raw: unknown): OrderItem[] {
   if (!Array.isArray(raw)) return []
   const seen = new Set<string>()
   const items: OrderItem[] = []
 
-  for (const entry of raw.slice(0, 50)) {
-    const id = String((entry as OrderItem)?.id ?? '')
-    const format = String((entry as OrderItem)?.format ?? '') as Format
-    if (!WALLPAPER_IDS.includes(id as (typeof WALLPAPER_IDS)[number])) continue
-    if (!VALID_FORMATS.includes(format)) continue
-    const key = `${id}:${format}`
+  for (const entry of raw.slice(0, 30)) {
+    const e = entry as Partial<OrderItem>
+    const id = String(e?.id ?? '')
+    const size = String(e?.size ?? '')
+    const edition = String(e?.edition ?? '') as OrderItem['edition']
+    const frame = String(e?.frame ?? 'none') as OrderItem['frame']
+
+    if (!PRINT_IDS.includes(id as (typeof PRINT_IDS)[number])) continue
+    if (!SIZE_PRICES[size]) continue
+    if (edition !== 'open' && edition !== 'limited') continue
+    if (!(frame in FRAME_PRICES)) continue
+
+    const key = `${id}:${size}:${edition}:${frame}`
     if (seen.has(key)) continue
     seen.add(key)
-    items.push({ id, format })
+    items.push({ id, size, edition, frame })
   }
   return items
 }
 
-export const fileNameFor = ({ id, format }: OrderItem) =>
-  format === 'iphone' ? `${id}-iphone.jpg` : `${id}-${format.replace(':', 'x')}.jpg`
-
-/**
- * Signs a short-lived download token. HMAC over the file + expiry, so links
- * can't be forged or shared indefinitely.
- */
-export function signDownload(file: string, secret: string, ttlMs = 1000 * 60 * 60 * 24 * 7) {
-  const expires = Date.now() + ttlMs
-  const payload = `${file}.${expires}`
-  const sig = crypto.createHmac('sha256', secret).update(payload).digest('base64url')
-  return { file, expires, sig }
+export function priceOf(item: OrderItem) {
+  const base = SIZE_PRICES[item.size]
+  const withEdition =
+    item.edition === 'limited' ? Math.round((base * LIMITED_PREMIUM) / 100) * 100 : base
+  return withEdition + FRAME_PRICES[item.frame]
 }
 
-export function verifyDownload(file: string, expires: number, sig: string, secret: string) {
-  if (!Number.isFinite(expires) || Date.now() > expires) return false
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(`${file}.${expires}`)
-    .digest('base64url')
-  // constant-time compare
-  const a = Buffer.from(sig)
-  const b = Buffer.from(expected)
-  return a.length === b.length && crypto.timingSafeEqual(a, b)
+export function describe(item: OrderItem) {
+  const [w, h] = item.size.split('x')
+  const frame = item.frame === 'none' ? 'Unframed' : `${item.frame === 'oak' ? 'Oak' : 'Black'} frame`
+  const edition = item.edition === 'limited' ? 'Edition of 25' : 'Open edition'
+  return `${w} × ${h} cm · ${edition} · ${frame}`
 }

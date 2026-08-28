@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '../lib/cart-context'
-import { formatPrice } from '../data/wallpapers'
+import { formatPrice } from '../data/prints'
 import { useCursor } from '../lib/cursor-context'
 
 /**
@@ -26,7 +26,9 @@ export function CartBar() {
         body: JSON.stringify({
           items: lines.map((l) => ({
             id: l.slug,
-            format: l.device === 'iphone' ? 'iphone' : l.ratio,
+            size: l.size,
+            edition: l.edition,
+            frame: l.frame,
           })),
         }),
       })
@@ -61,7 +63,7 @@ export function CartBar() {
                   className="group flex items-center gap-2 border border-line px-3 py-1.5 text-xs uppercase tracking-[0.1em] text-muted transition-colors duration-300 hover:border-ink hover:text-ink"
                 >
                   {l.title}
-                  <span className="text-[10px]">{l.device === 'iphone' ? 'iPhone' : l.ratio}</span>
+                  <span className="text-[10px]">{l.label}</span>
                   <span className="opacity-40 transition-opacity group-hover:opacity-100">×</span>
                 </button>
               ))}

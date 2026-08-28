@@ -1,13 +1,17 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Device, DesktopRatio } from '../data/wallpapers'
+import type { Edition } from '../data/prints'
+import type { FrameStyle } from '../components/FramedPrint'
 
 export interface CartLine {
-  /** Unique per wallpaper + device + ratio, so the same photo can be bought twice in different crops. */
+  /** Unique per print + size + edition + frame. */
   id: string
   slug: string
   title: string
-  device: Device
-  ratio?: DesktopRatio
+  /** Human-readable variant for the cart bar. */
+  label: string
+  size: string
+  edition: Edition
+  frame: FrameStyle
   price: number
   preview: string
 }
@@ -24,9 +28,8 @@ interface CartValue {
 const CartContext = createContext<CartValue | null>(null)
 const STORAGE_KEY = 'am-cart'
 
-export function lineId(slug: string, device: Device, ratio?: DesktopRatio) {
-  return device === 'iphone' ? `${slug}:iphone` : `${slug}:desktop:${ratio ?? '16:9'}`
-}
+export const lineId = (slug: string, size: string, edition: Edition, frame: FrameStyle) =>
+  `${slug}:${size}:${edition}:${frame}`
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>(() => {
