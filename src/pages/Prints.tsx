@@ -4,6 +4,8 @@ import { PageTransition } from '../components/PageTransition'
 import { TextReveal } from '../components/TextReveal'
 import { Footer } from '../components/Footer'
 import { FramedPrint, type FrameStyle } from '../components/FramedPrint'
+import { RoomScene, type Room } from '../components/RoomScene'
+import { SizeGuide } from '../components/SizeGuide'
 import { useCursor } from '../lib/cursor-context'
 import { useCart, lineId } from '../lib/cart-context'
 import {
@@ -216,6 +218,46 @@ export function Prints() {
                 View print <span aria-hidden="true">⤢</span>
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* in a room */}
+        <div className="mt-20 md:mt-28">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-muted">
+            {sizeLabel(size, selected.orientation)} in a room
+          </p>
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            {(['living', 'kitchen', 'bedroom'] as Room[]).map((room, i) => (
+              <RoomScene
+                key={room}
+                src={selected.image}
+                alt={selected.title}
+                room={room}
+                sizeId={size.id}
+                orientation={selected.orientation}
+                frame={frame}
+                count={i === 1 ? 3 : i === 2 ? 2 : 1}
+              />
+            ))}
+          </div>
+          <p className="mt-3 text-[10px] uppercase tracking-[0.2em] text-muted">
+            Rooms shown to scale — a 260 cm wall
+          </p>
+        </div>
+
+        {/* size guide */}
+        <div className="mt-16 grid gap-8 border-t border-line pt-8 md:grid-cols-[minmax(0,1fr)_minmax(0,320px)] md:gap-12">
+          <SizeGuide
+            orientation={selected.orientation}
+            selectedId={size.id}
+            onSelect={(s) => setSizeId(s.id)}
+          />
+          <div className="flex flex-col justify-center">
+            <p className="text-[10px] uppercase tracking-[0.3em] text-muted">Size guide</p>
+            <p className="mt-4 max-w-xs text-sm text-muted">
+              Every size is the same photograph — only the paper grows. Pick the one that suits
+              your wall; tap a size in the diagram to switch.
+            </p>
           </div>
         </div>
 

@@ -27,10 +27,10 @@ export interface PrintSize {
 }
 
 export const SIZES: PrintSize[] = [
-  { id: '30x40', short: 30, long: 40, price: 12000 },
-  { id: '50x70', short: 50, long: 70, price: 25000 },
-  { id: '70x100', short: 70, long: 100, price: 42000 },
-  { id: '100x140', short: 100, long: 140, price: 70000 },
+  { id: '30x40', short: 30, long: 40, price: 22900 },
+  { id: '50x70', short: 50, long: 70, price: 29900 },
+  { id: '70x100', short: 70, long: 100, price: 37900 },
+  { id: '100x140', short: 100, long: 140, price: 47900 },
 ]
 
 /** A numbered, signed edition carries a premium over the open edition. */

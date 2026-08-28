@@ -13,10 +13,10 @@ export const PRINT_IDS = [
 ] as const
 
 export const SIZE_PRICES: Record<string, number> = {
-  '30x40': 12000,
-  '50x70': 25000,
-  '70x100': 42000,
-  '100x140': 70000,
+  '30x40': 22900,
+  '50x70': 29900,
+  '70x100': 37900,
+  '100x140': 47900,
 }
 
 export const LIMITED_PREMIUM = 1.6
