@@ -6,7 +6,7 @@ const ITEMS = [
   { number: '01', label: 'About', to: '/about' },
   { number: '02', label: 'Projects', to: '/projects' },
   { number: '03', label: 'Get my LUTs', to: '/luts' },
-  { number: '04', label: 'Get my art', to: '/prints' },
+  { number: '04', label: 'Get my wallpapers', to: '/wallpapers' },
   { number: '05', label: 'Contact', to: '/contact' },
 ]
 

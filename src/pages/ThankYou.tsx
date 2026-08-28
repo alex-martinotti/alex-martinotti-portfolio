@@ -29,20 +29,20 @@ export function ThankYou() {
         </TextReveal>
 
         <p className="mt-6 max-w-md text-lg text-muted md:text-xl">
-          Your order is confirmed. Each print is made to order, so it ships in 3–5 days — I'll email you when it's on its way.
+          Your download links are on their way by email. They're good for seven days.
         </p>
 
         <p className="mt-4 max-w-md text-sm text-muted">
-          A confirmation is on its way by email. Nothing after a few minutes? Check spam, then email me.
+          Nothing after a few minutes? Check spam, then email me and I'll sort it.
         </p>
 
         <Link
-          to="/prints"
+          to="/wallpapers"
           onMouseEnter={() => setMode('hover')}
           onMouseLeave={() => setMode('default')}
           className="group mt-12 inline-flex w-fit items-center gap-3 border-b border-ink pb-1 font-display text-xl font-black uppercase tracking-tight transition-colors duration-300 hover:text-muted"
         >
-          Back to prints
+          Back to wallpaper
           <span className="transition-transform duration-300 group-hover:translate-x-2">→</span>
         </Link>
       </div>

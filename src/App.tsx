@@ -12,7 +12,7 @@ import { ProjectPage } from './pages/ProjectPage'
 import { Contact } from './pages/Contact'
 import { About } from './pages/About'
 import { Luts } from './pages/Luts'
-import { Prints } from './pages/Prints'
+import { Wallpapers } from './pages/Wallpapers'
 import { ThankYou } from './pages/ThankYou'
 
 function App() {
@@ -34,8 +34,7 @@ function App() {
                 <Route path="/work-with-me" element={<Navigate to="/contact" replace />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/luts" element={<Luts />} />
-                <Route path="/prints" element={<Prints />} />
-                <Route path="/wallpapers" element={<Navigate to="/prints" replace />} />
+                <Route path="/wallpapers" element={<Wallpapers />} />
                 <Route path="/thank-you" element={<ThankYou />} />
               </Routes>
             </AnimatePresence>

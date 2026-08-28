@@ -1,20 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Stripe from 'stripe'
-import { parseItems, priceOf, describe } from './_lib/catalogue'
+import { parseItems, PRICE_CENTS, type OrderItem } from './_lib/catalogue'
 
 /**
- * Creates a Stripe Checkout Session for a print order.
+ * Creates a Stripe Checkout Session for the cart and returns its URL.
  *
- * Physical goods, so we collect a shipping address and offer shipping rates.
- * Prices are computed server-side from the catalogue, never trusted from the
- * request body.
+ * Prices come from the server-side catalogue, never from the request body.
+ * The items are stashed in session metadata so the webhook knows what to
+ * deliver after payment.
  *
  * Env: STRIPE_SECRET_KEY
  */
-const SHIPPING = [
-  { label: 'Europe', amount: 1500, min: 3, max: 7 },
-  { label: 'Rest of world', amount: 3500, min: 7, max: 14 },
-]
+const label = ({ id, format }: OrderItem) =>
+  `${id.replace(/-/g, ' ')} — ${format === 'iphone' ? 'iPhone' : format}`
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -37,35 +35,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
+      // Digital goods sold into the EU need VAT at the buyer's rate.
+      // Stripe Tax works this out once it's enabled on the account.
       automatic_tax: { enabled: true },
       billing_address_collection: 'required',
-      shipping_address_collection: { allowed_countries: ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','GB','CH','NO','US','CA','AU','NZ','JP','SG'] },
-      shipping_options: SHIPPING.map((s) => ({
-        shipping_rate_data: {
-          type: 'fixed_amount',
-          fixed_amount: { amount: s.amount, currency: 'eur' },
-          display_name: s.label,
-          delivery_estimate: {
-            minimum: { unit: 'business_day', value: s.min },
-            maximum: { unit: 'business_day', value: s.max },
-          },
-        },
-      })),
       line_items: items.map((item) => ({
         quantity: 1,
         price_data: {
           currency: 'eur',
-          unit_amount: priceOf(item),
+          unit_amount: PRICE_CENTS,
           tax_behavior: 'inclusive',
           product_data: {
-            name: item.id.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-            description: describe(item),
+            name: label(item),
+            description: 'Digital wallpaper — high-resolution JPG',
           },
         },
       })),
       metadata: { items: JSON.stringify(items) },
       success_url: `${origin}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/prints`,
+      cancel_url: `${origin}/wallpapers`,
     })
 
     return res.status(200).json({ url: session.url })
