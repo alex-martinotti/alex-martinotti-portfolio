@@ -36,6 +36,22 @@ export const SIZES: PrintSize[] = [
 /** A numbered, signed edition carries a premium over the open edition. */
 export const LIMITED_PREMIUM = 1.6
 
+export interface Print {
+  id: string
+  number: string
+  title: string
+  collection: Collection
+  location: string
+  year: string
+  orientation: Orientation
+  /** Native-aspect print file — composited into the interior templates. */
+  image: string
+  /** Small version used for catalogue tiles. */
+  thumbnail: string
+}
+
+const media = (id: string, file: string) => `/media/prints/${id}/${file}`
+
 const p = (
   id: string,
   title: string,
