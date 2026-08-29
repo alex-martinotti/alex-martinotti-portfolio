@@ -33,9 +33,29 @@ const escapeHtml = (value: string) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
 
+/**
+ * The apex domain 308-redirects to www at the platform level, including for
+ * fetch() calls the page itself makes — so a tab left open on the bare
+ * domain ends up POSTing here cross-origin once it follows that redirect.
+ * Without these headers the browser blocks the (successful!) response as a
+ * CORS failure, which looks identical to the request actually failing.
+ */
+const ALLOWED_ORIGINS = new Set(['https://alexmartinotti.com', 'https://www.alexmartinotti.com'])
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const origin = req.headers.origin
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  }
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end()
+  }
+
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST')
+    res.setHeader('Allow', 'POST, OPTIONS')
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
