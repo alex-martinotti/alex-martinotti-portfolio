@@ -14,6 +14,7 @@ import { Resend } from 'resend'
  */
 const FROM_ADDRESS = 'Alex Martinotti <hello@alexmartinotti.com>'
 const TO_ADDRESS = 'martinotti.alex@gmail.com'
+const CALENDLY_URL = 'https://calendly.com/alex_martinotti/15min'
 
 interface Payload {
   name?: string
@@ -114,7 +115,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           timing ? `, timing ${timing}` : ''
         } — I've got the details.`,
         '',
-        "I read everything myself and usually reply within a day or two. If something's changed in the meantime, just hit reply.",
+        "I read everything myself and usually reply within a day or two. If it's easier to talk it through, grab a time that suits you:",
+        '',
+        `Book a 15-min call → ${CALENDLY_URL}`,
         '',
         '— Alex',
         '',
@@ -130,7 +133,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           </p>
           <p style="margin:0 0 16px">
             I read everything myself and usually reply within a day or two.
-            If something's changed in the meantime, just hit reply.
+            If it's easier to talk it through, grab a time that suits you:
+          </p>
+          <p style="margin:0 0 24px">
+            <a href="${CALENDLY_URL}" style="display:inline-block;padding:12px 20px;background:#111110;color:#fafaf8;text-decoration:none;font-size:14px;letter-spacing:0.04em">Book a 15-min call →</a>
           </p>
           <p style="margin:0 0 24px">— Alex</p>
           <p style="margin:0;font-size:13px;color:#8c8880">
