@@ -5,7 +5,7 @@ import { useCursor } from '../lib/cursor-context'
 const ITEMS = [
   { number: '01', label: 'About', to: '/about' },
   { number: '02', label: 'Projects', to: '/projects' },
-  { number: '03', label: 'Get my LUTs', to: '/luts' },
+  { number: '03', label: 'Get my LUTs', to: '/luts', soon: true },
   { number: '04', label: 'Get my wallpapers', to: '/wallpapers' },
   { number: '05', label: 'Contact', to: '/contact' },
 ]
@@ -21,10 +21,11 @@ export function BrowsePanel({ open, onClose }: { open: boolean; onClose: () => v
           animate={{ clipPath: 'inset(0 0 0% 0)' }}
           exit={{ clipPath: 'inset(0 0 100% 0)' }}
           transition={{ duration: 0.4, ease: [0.76, 0, 0.24, 1] }}
+          id="site-menu"
           className="fixed inset-0 z-40 overflow-y-auto bg-ink text-void"
         >
           <div className="mx-auto flex min-h-full max-w-4xl flex-col justify-center px-6 py-28 md:px-10">
-            <nav className="flex flex-col">
+            <nav className="flex flex-col" aria-label="Site">
               {ITEMS.map((item, i) => (
                 <Link
                   key={item.to}
@@ -53,6 +54,9 @@ export function BrowsePanel({ open, onClose }: { open: boolean; onClose: () => v
                       {item.label}
                     </motion.span>
                   </span>
+                  {'soon' in item && item.soon && (
+                    <span className="ml-auto self-center text-[10px] uppercase tracking-[0.25em] text-void/40">Soon</span>
+                  )}
                 </Link>
               ))}
             </nav>

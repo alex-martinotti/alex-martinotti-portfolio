@@ -2,10 +2,10 @@ import { useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useCursor } from '../lib/cursor-context'
 import { PageTransition } from '../components/PageTransition'
+import { usePageMeta } from '../lib/use-page-meta'
 
-/** Update to point at your real inbox, and add a real scheduling link once you have one. */
-const EMAIL = 'martinotti.alex@gmail.com'
-const BOOKING_URL = ''
+const EMAIL = 'hello@alexmartinotti.com'
+const BOOKING_URL = 'https://calendly.com/alex_martinotti/15min'
 
 const PROJECT_TYPES = ['Film', 'Photo', 'Campaign', 'Social', 'Brand', 'Other']
 const TIMING_OPTIONS = ['ASAP', 'This month', 'Soon', 'Just exploring']
@@ -59,6 +59,7 @@ function StepShell({
 
 export function Contact() {
   const { setMode } = useCursor()
+  usePageMeta('Start a project', 'Tell Alex Martinotti about your film, photo or campaign project — or book a 15-minute call.')
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Answers>(emptyAnswers)
   const [done, setDone] = useState(false)
@@ -157,12 +158,12 @@ export function Contact() {
                   onMouseLeave={() => setMode('default')}
                   className={`${labelClass} mt-4`}
                 >
-                  Book a 30 min call
+                  Book a 15 min call
                   <span>→</span>
                 </a>
               ) : (
                 <p className="mt-4 font-display text-xl font-black uppercase tracking-tight text-muted md:text-2xl">
-                  Book a 30 min call — link coming soon
+                  Book a 15 min call — link coming soon
                 </p>
               )}
               <p className="mt-6 text-sm text-muted">or I'll reply to your email.</p>
@@ -321,6 +322,26 @@ export function Contact() {
             </div>
 
             {error && <p className="mt-6 text-sm text-muted">{error}</p>}
+
+            <p className="mt-16 text-sm text-muted">
+              Rather talk it through?{' '}
+              <a
+                href={BOOKING_URL}
+                target="_blank"
+                rel="noreferrer"
+                onMouseEnter={() => setMode('hover')}
+                onMouseLeave={() => setMode('default')}
+                className="border-b border-muted/50 pb-px text-ink transition-colors duration-300 hover:border-ink"
+              >
+                Book a 15 min call →
+              </a>
+              <span className="mt-2 block">
+                Or write to{' '}
+                <a href={`mailto:${EMAIL}`} className="text-ink">
+                  {EMAIL}
+                </a>
+              </span>
+            </p>
           </>
         )}
       </div>

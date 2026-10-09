@@ -5,13 +5,20 @@ import { PageTransition } from '../components/PageTransition'
 import { TextReveal } from '../components/TextReveal'
 import { KineticConstruct } from '../components/KineticConstruct'
 import { HeroCTA } from '../components/HeroCTA'
+import { usePageMeta } from '../lib/use-page-meta'
 
-/** Swap these two paths to change the hero reel. Poster is the first frame. */
-const HERO_VIDEO = '/media/hero/reel-landscape.mp4'
+/**
+ * Swap these paths to change the hero reel. Poster is the first frame. Both
+ * reels are encoded grayscale with no audio track — the hero is shown
+ * grayscale and muted anyway — and phones get a 720p cut at under half the size.
+ */
+const HERO_VIDEO = '/media/hero/reel-desktop.mp4'
+const HERO_VIDEO_MOBILE = '/media/hero/reel-mobile.mp4'
 const HERO_POSTER = '/media/hero/poster.jpg'
 
 export function Home() {
   const { setMode } = useCursor()
+  usePageMeta()
   // Shared by both bottom links: darkens/offsets the hero so either click reads
   // as "sliding into another layer" — the same doorway, two directions.
   const [leaving, setLeaving] = useState(false)
@@ -62,7 +69,6 @@ export function Home() {
         <div className="absolute inset-0">
           <motion.video
             ref={videoRef}
-            src={HERO_VIDEO}
             poster={HERO_POSTER}
             autoPlay
             muted
@@ -71,6 +77,7 @@ export function Home() {
             controls={false}
             disablePictureInPicture
             preload="auto"
+            aria-hidden="true"
             className="pointer-events-none h-full w-full object-cover"
             animate={{
               scale: leaving ? [1.1, 1.14] : [1.1, 1.16, 1.1],
@@ -82,7 +89,10 @@ export function Home() {
               opacity: { duration: 0.6 },
               filter: { duration: 0.6 },
             }}
-          />
+          >
+            <source src={HERO_VIDEO_MOBILE} type="video/mp4" media="(max-width: 767px)" />
+            <source src={HERO_VIDEO} type="video/mp4" />
+          </motion.video>
           <motion.div
             className="absolute inset-0 bg-black"
             animate={{ opacity: leaving ? 0.75 : 0.45 }}

@@ -5,6 +5,8 @@ import { projects } from '../data/projects'
 import { useCursor } from '../lib/cursor-context'
 import { PageTransition } from '../components/PageTransition'
 import { useProjectTransition } from '../lib/project-transition'
+import { usePageMeta } from '../lib/use-page-meta'
+import { Footer } from '../components/Footer'
 
 /**
  * A pure-typography index. On desktop, hovering a title floats a small preview
@@ -14,6 +16,7 @@ import { useProjectTransition } from '../lib/project-transition'
 export function ProjectsIndex() {
   const { setMode } = useCursor()
   const { expandTo } = useProjectTransition()
+  usePageMeta('Projects', 'Selected films and photography by Alex Martinotti — brand, travel, event and campaign work.')
   const [hovered, setHovered] = useState<number | null>(null)
   const y = useMotionValue(240)
   const springY = useSpring(y, { damping: 26, stiffness: 220, mass: 0.6 })
@@ -54,7 +57,7 @@ export function ProjectsIndex() {
                 setMode('project')
               }}
               onMouseLeave={() => setMode('default')}
-              className="group flex items-baseline gap-4 border-t border-line py-5 transition-opacity duration-300 last:border-b md:py-6"
+              className="group flex items-center gap-4 border-t lg:items-baseline border-line py-5 transition-opacity duration-300 last:border-b md:py-6"
               style={{ opacity: hovered === null || hovered === i ? 1 : 0.35 }}
             >
               <span
@@ -80,6 +83,16 @@ export function ProjectsIndex() {
               >
                 {project.categories[0]} / {project.year}
               </span>
+
+              {/* No hover on touch screens, so the preview the desktop list
+                  floats on hover sits in the row instead. */}
+              <img
+                src={project.preview}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="aspect-[4/5] w-14 shrink-0 object-cover grayscale contrast-110 sm:w-16 lg:hidden"
+              />
             </Link>
           ))}
         </nav>
@@ -108,6 +121,8 @@ export function ProjectsIndex() {
           </AnimatePresence>
         </motion.div>
       </div>
+
+      <Footer />
     </PageTransition>
   )
 }

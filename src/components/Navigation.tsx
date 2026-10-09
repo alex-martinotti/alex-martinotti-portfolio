@@ -45,6 +45,13 @@ export function Navigation({ children }: { children: ReactNode }) {
   }, [location.pathname])
 
   useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
+
+  useEffect(() => {
     document.documentElement.style.overflow = open ? 'hidden' : ''
     return () => {
       document.documentElement.style.overflow = ''
@@ -84,6 +91,7 @@ export function Navigation({ children }: { children: ReactNode }) {
     <>
       <Link
         to="/"
+        aria-label="Alex Martinotti — home"
         onMouseEnter={() => setMode('hover')}
         onMouseLeave={() => setMode('default')}
         className={`group fixed left-6 top-5 z-50 md:left-10 md:top-7 ${backdrop}`}
@@ -102,6 +110,9 @@ export function Navigation({ children }: { children: ReactNode }) {
       </Link>
 
       <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="site-menu"
         onClick={() => setOpen((v) => !v)}
         onMouseEnter={() => setMode('hover')}
         onMouseLeave={() => setMode('default')}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { PageTransition } from '../components/PageTransition'
+import { usePageMeta } from '../lib/use-page-meta'
 import { TextReveal } from '../components/TextReveal'
 import { Footer } from '../components/Footer'
 
@@ -11,6 +12,7 @@ const PORTRAIT_SRC = '/media/about/portrait.jpg'
 const PORTRAIT_FALLBACK = 'https://picsum.photos/seed/alex-portrait/1200/1500'
 
 export function About() {
+  usePageMeta('About', 'Alex Martinotti is a Luxembourg-based filmmaker and photographer making brand, travel and event films.')
   const [src, setSrc] = useState(PORTRAIT_SRC)
 
   return (

@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { PageTransition } from '../components/PageTransition'
+import { usePageMeta } from '../lib/use-page-meta'
 import { TextReveal } from '../components/TextReveal'
 import { Footer } from '../components/Footer'
 import { useCart } from '../lib/cart-context'
@@ -12,6 +13,7 @@ import { useCursor } from '../lib/cursor-context'
  * used to obtain downloads by visiting the URL directly.
  */
 export function ThankYou() {
+  usePageMeta('Thank you')
   const { clear } = useCart()
   const { setMode } = useCursor()
 

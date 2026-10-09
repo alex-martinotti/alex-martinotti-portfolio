@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PageTransition } from '../components/PageTransition'
+import { usePageMeta } from '../lib/use-page-meta'
 import { TextReveal } from '../components/TextReveal'
 import { Footer } from '../components/Footer'
 import { IPhoneScreen } from '../components/devices/IPhoneScreen'
@@ -21,6 +22,7 @@ import {
 const INCLUDED = ['High-resolution JPG', 'Instant download', 'Personal use']
 
 export function Wallpapers() {
+  usePageMeta('Wallpapers', 'Photographic wallpapers for iPhone and desktop by Alex Martinotti. Instant download.')
   const { setMode } = useCursor()
   const { add, has } = useCart()
 

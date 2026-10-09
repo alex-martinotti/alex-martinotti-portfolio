@@ -1,9 +1,11 @@
 import { PageTransition } from '../components/PageTransition'
+import { usePageMeta } from '../lib/use-page-meta'
 import { TextReveal } from '../components/TextReveal'
 import { Footer } from '../components/Footer'
 import { ComingSoon } from '../components/ComingSoon'
 
 export function Luts() {
+  usePageMeta('LUTs')
   return (
     <PageTransition>
       <div className="mx-auto flex min-h-svh max-w-3xl flex-col justify-center px-6 py-32 md:px-10">
