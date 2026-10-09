@@ -81,8 +81,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const firstName = name.split(' ')[0] || 'there'
 
   try {
+    // Resend reports failures in the result rather than throwing, so each send
+    // is checked — otherwise a rejected email still answers { ok: true }.
     // 1. The enquiry itself — reply-to is set so hitting reply goes to them.
-    await resend.emails.send({
+    const enquiry = await resend.emails.send({
       from: FROM_ADDRESS,
       to: TO_ADDRESS,
       replyTo: email,
@@ -97,8 +99,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ].join('\n'),
     })
 
+    if (enquiry.error) throw enquiry.error
+
     // 2. Their confirmation — deliberately plain, so it reads as a person wrote it.
-    await resend.emails.send({
+    const confirmation = await resend.emails.send({
       from: FROM_ADDRESS,
       to: email,
       replyTo: TO_ADDRESS,
@@ -137,6 +141,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         </div>
       `,
     })
+    if (confirmation.error) throw confirmation.error
 
     return res.status(200).json({ ok: true })
   } catch (error) {
