@@ -82,6 +82,11 @@ export function Contact() {
    */
   const finish = async () => {
     if (sending) return
+    // Same check the API runs — a typo should be fixed here, not bounced to a mail draft.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(answers.email.trim())) {
+      setError("That doesn't look like an email address — check it and try again.")
+      return
+    }
     setSending(true)
     setError(null)
 
